@@ -13,8 +13,14 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "incremental": true
+    "incremental": true,
+    "baseUrl": ".", 
+    // 절대경로 생성
+    "paths": {
+       "@libs/*": ["libs/*"],
+       "@components/*": ["components/*"],
+    }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "libs/utils.js"],
   "exclude": ["node_modules"]
 }

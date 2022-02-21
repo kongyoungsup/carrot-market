@@ -1,0 +1,33 @@
+// 프리즈마 설정을하고 스키마를 정한다.
+
+generator client {
+  provider        = "prisma-client-js"
+  // previewFeatures, 서로 다른 객체에 연결할떄 상대 객체가 존재하는지 체크?
+  previewFeatures = ["referentialIntegrity"]
+}
+
+datasource db {
+  provider             = "mysql"
+  url                  = env("DATABASE_URL")
+  referentialIntegrity = "prisma"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  phone     String?  @unique
+  email     String?  @unique
+  name      String
+  avator    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Token     Token[]
+}
+
+model Token {
+  id        Int      @id @default(autoincrement())
+  payload   String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
