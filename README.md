@@ -4,6 +4,12 @@
 
 npm i next@latest react@rc react-dom@rc
 
+npm i react@17.0.2 react-dom@17.0.2
+
+
+- with 타입스크립트
+  npx create-next-app@latest --typescript
+
 ## git
 
 https://github.com/kongyoungsup/carrot-market.git
@@ -52,6 +58,7 @@ npx prisma
 <!-- Prisma 스키마 파일 템플릿을 생성하여 Prisma 프로젝트를 설정 -->
 
 npx prisma init
+
 // 루트 디렉터리에 .env파일 을 만듭니다.
 // prisma이라는 파일을 포함하는 이라는 새 디렉토리를 생성
 
@@ -102,7 +109,8 @@ npx prisma studio
 
   <!-- // prisma client 설치 -->
 
-npm i @prisma/client
+1. npm i @prisma/client
+2. libs > client.ts 파일 생성
 
 - libs > clients.ts 파일에 임포트
 
@@ -119,14 +127,21 @@ npx prisma generate
 ## 절대 경로 만들기
 
 - tsconfig.json (compilerOptions) 추가
-  "paths": {
-  "@libs/_": ["libs/_"],
-  "@components/_": ["components/_"],
-  }
 
-  pscale branch promote carrot-market main
+//
+"compilerOptions": {
+(...)
+"baseUrl": ".",
+"paths": {
+"@libs/_": ["libs/_"],
+"@components/_": ["components/_"],
+}
+}
+//
 
-  pscale deploy-request create carrot-market main
+pscale branch promote carrot-market main
+
+pscale deploy-request create carrot-market main
 
 ## Twillo 만들기 (mms) \*비번 x2
 
@@ -146,6 +161,7 @@ npx prisma generate
 
 ## iron-session (쿠키 저장)
 
+- \*\* .env 환경변수 설정 후에 서버 껏다켜야함..
 - npm add iron-session
 - 세션 기간은 기본적으로 14일
 - libs/server/withSession.tsx
@@ -170,3 +186,72 @@ npx prisma generate
 - npm install swr --legacy-peer-deps //reacr 18 베타버젼일 경우..
 - libs/client/useUser.ts
 - 전역설정: app.js (SWRConfig)
+
+## create 순서
+
+- Model 생성 (prisma/schema.prisma)
+- useForm > register, handleSubmit
+    <!-- const { register, handleSubmit } = useForm<TypeUploadProduct>(); -->
+- useMutation
+  <!-- const [uploadProduct, { loading, data }] = useMutation('/api/products');
+       const onValid = ( formData: TypeUploadProduct ) => {
+        if (loading) return
+       uploadProduct(formData)
+      } -->
+- (POST API) /api/products (api 파일 생성)
+- (GET API) \*SWR, Client Page > SWR
+
+## Prisma Model queries
+
+# READ
+
+- 'findUnique' 단일 데이터베이스 레코드를 검색 (!where, select, include, rejectOnNotFound)
+- 'findFirst' 기준과 일치하는 목록의 첫 번째 레코드
+- 'findMany' 일치하는 다수 레코드 목록을 반환
+
+# CREATE
+
+- 'create' 새 데이터베이스 레코드를 생성 (!data)
+
+# UPDATE
+
+- 'update' 기존 데이터베이스 레코드를 업데이트 (!data, !where)
+- 'upsert' 기존 데이터베이스를 업데이트 하거나 새 데이터베이스 레코드를 생성 (!create, !update, !where)
+
+# DELETE
+
+- 'delete' 기존 데이터베이스 레코드를 삭제 (!where), (By ID / By a unique attribute)
+
+# CreateMany
+
+- 'createMany' 트랜잭션에서 여러 레코드를 생성 (!data)
+
+## model Record, API 호출 방식
+
+/api/users/me/records?kind=fav
+
+    const reviews = await client.record.findMany({
+      where: {
+        userId: user?.id,
+        kind: "fav"
+      }
+    })
+
+## PRISMA SEED
+
+- 대량의 데이터베이스 생성
+- prisma/seed.ts
+- package.json 에 아래 내용 추가 ( )
+  "prisma": {
+  "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  }
+- .env 파일 Connection pool 설정
+  url = "postgresql://johndoe:mypassword@localhost:5432/mydb?connection_limit=5&pool_timeout=10"
+- ts-node 설치
+  npm i ts-node
+- npx prisma db seed
+
+## planetScale 은 row에 따라 비용이 지불된다.
+
+- select 로 필요한 데이터만 가져온다
+- take, skip 을 사용한다. (pages/api/stream/index.ts)

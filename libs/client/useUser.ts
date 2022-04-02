@@ -1,14 +1,22 @@
+import { User } from '@prisma/client';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import useSWR from 'swr'
 
+interface TypeUser {
+  ok: boolean;
+  profile: User
+}
 
 export default function useUser() {
-  const { data, error } = useSWR('/api/users/me')
+  
+  const { data, error } = useSWR<TypeUser>('/api/users/me');
   const router = useRouter();
+
   useEffect(() => {
     if ( data && !data.ok ) {
       router.replace("/enter");
+      return
     }
   }, [data, router]);
   
@@ -16,6 +24,7 @@ export default function useUser() {
     user: data?.profile, 
     isLoding: !data && !error 
   };
+
 }
 
 

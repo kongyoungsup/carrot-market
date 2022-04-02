@@ -1,40 +1,143 @@
 import { NextPage } from 'next'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Button from '@components/Button';
 import Layout from '@components/Layout';
+import useSWR, { useSWRConfig } from 'swr';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
+import { Product, User } from '@prisma/client';
+import useMutation from '@libs/client/useMutation';
+import { cls } from '@libs/client/utils';
+import useUser from '@libs/client/useUser';
+import cfUrl from '@libs/client/imgUrl';
+import Image from 'next/image';
+import styles from '../../styles/Image.module.css'
+
+
+
+interface TypeProductUser extends Product {
+  user: User;
+}
+
+interface TypeProduct {
+  ok: boolean;
+  product: TypeProductUser;
+  relatedProduct: Product | any;
+  isLiked: boolean;
+}
 
 
 const ItemDetail:NextPage = ()=> {
+
+  const { user, isLoding } = useUser()
+
+  console.log(user);
+  
+
+  const router = useRouter();
+  const { mutate: glbalMutate } = useSWRConfig()
+
+                                              // router.query 를 api로 사용 가져오면 검증해야됨.
+  const { data , mutate} = useSWR<TypeProduct>(router.query.id ? `/api/products/${router.query.id}` : null )
+  const [ toggleFav ] = useMutation(`/api/products/${router.query.id}/fav`)
+
+  const [ createChat,{ data: charRoomRes, loading} ] = useMutation(`/api/chat/${router.query.id}`)
+
+
+
+  const addFav = () => { 
+  // 타입스크립트 에러 방지
+  if(!data) return
+
+  // post 요청을 하기전에 빠르게 미리 변경
+  // 콜백함수 사용, 인자로 data 를 가져온다
+  mutate( (prev) => prev && {...prev, isLiked: !prev.isLiked }, false );
+
+  // post 요청 go
+  toggleFav();
+  }
+
+  const logout = () => { 
+    if(!data) return
+    const logg = glbalMutate('/api/users/me', { ok: false  })
+    console.log(logg);
+    
+   }
+
+  const onChat = () => { 
+    if(loading) return
+    createChat() 
+  }
+
+  console.log(charRoomRes);
+  
+
+  useEffect(() => {
+    if(charRoomRes && charRoomRes?.ok){
+      router.push(`/chats/${charRoomRes?.id}`)
+    }
+  }, [charRoomRes]);
+
+   
+
+   
   return(
     <Layout canGoBack>
+      <button onClick={logout}>logout</button>
     <div>
-      <div className=' p-4'>
-        <div className=' w-full h-80 bg-gray-400' />
+      {/* { !data?.ok ? <h1 className='text-5xl'>Loding...</h1> : ( */}
+      <>
+      <div className='p-4 '>
+
+        { data?.product?.image 
+        ? (<div className={styles.imageContainer}>
+            <Image 
+              src={cfUrl({id: data?.product?.image, variant: 'public'})} 
+              layout='fill'
+              className={styles.image}
+            />
+          </div>)
+        : (<div className=' w-full h-80 bg-gray-400 object-cover' />)
+        }
+        
         <div className=' flex border-b  py-4 items-center'>
-          <div className=' w-12 h-12 bg-gray-300 rounded-full' />
+          { data?.product?.user?.avator 
+            ? <Image src={cfUrl({id: data?.product?.user?.avator, variant: 'avator'})} 
+                height={48} width={48} 
+                className='bg-gray-300 rounded-full object-cover' 
+                priority
+              />
+            : <div className=' w-12 h-12 bg-gray-300 rounded-full' />
+          }
           <div className=' pl-3'>
-            <p className=' font-bold text-sm '>Steve Jebs</p>
-            <p className=' text-xs cursor-pointer hover:pl-1 transition'>View profile &rarr;</p>
+            <p className=' font-bold text-sm '>
+              {data?.product?.user?.name}
+            </p>
+            <Link href={`/user/profiles/${data?.product?.user?.id}`}>
+              <a className=' text-xs cursor-pointer hover:pl-1 transition'>
+                View profile &rarr;
+              </a>
+            </Link>
           </div>
         </div>
         <div className=' mt-3'>
-          <h1 className='text-2xl font-bold py-2'>Galaxy S50</h1>
-          <span className='text-xl font-medium'>$140</span>
+          <h1 className='text-2xl font-bold py-2'>
+            {data?.product?.name}
+          </h1>
+          <span className='text-xl font-medium'>
+            $ {data?.product?.price}
+          </span>
           <p className='mt-5'>
-            My money&apos;s in that office, right? If she start giving me some
-            bullshit about it ain&apos;t there, and we got to go someplace else
-            and get it, I&apos;m gonna shoot you in the head then and there.
-            Then I&apos;m gonna shoot that bitch in the kneecaps, find out where
-            my goddamn money is. She gonna tell me too. Hey, look at me when
-            I&apos;m talking to you, motherfucker. You listen: we go in there,
-            and that ni**a Winston or anybody else is in there, you the first
-            motherfucker to get shot. You understand?
+            {data?.product?.description}
           </p>
           <div className='flex space-x-3 items-center mt-3'>
-            <Button title='Talk to seller'/>
-            <button className=' p-3 hover:bg-gray-200 transition hover:rounded-md '>
+            <Button onClick={onChat} title='Talk to seller' />
+            <button onClick={addFav} className=' p-3 hover:bg-gray-200 transition hover:rounded-md '>
               <svg
-                className="h-6 w-6 text-center "
+                className={cls(
+                  "h-6 w-6 text-center ", 
+                  data?.isLiked ? "text-red-600" : ""
+                )}
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -54,20 +157,49 @@ const ItemDetail:NextPage = ()=> {
       </div>
       <div className=' px-4 mt-3'>
         <h2 className=' text-2xl font-bold mb-3'>Similar items</h2>
-        <div className='grid grid-cols-2 gap-4' >
-          {[1, 2, 3, 4, 5, 6].map((_, i) => (
-            <div key={i}>
-              <div className=' aspect-square bg-gray-400 mb-2' />
-              <h3 className='text-sm text-gray-700 cursor-pointer'>Galaxy S60</h3>
-              <p className='text-xs'>$6</p>
-            </div>
+        <ul className='grid grid-cols-2 gap-4' >
+          {data?.relatedProduct?.map((relatedProduct: any) => (
+            <li key={relatedProduct.id}>
+            <Link href={`/products/${relatedProduct.id}`}>
+              <div className='cursor-pointer'>
+                <div className=' aspect-square bg-gray-400 mb-2' />
+                <h3 className='text-sm text-gray-700'>
+                  {relatedProduct.name}
+                </h3>
+                <p className='text-xs'>
+                  $ {relatedProduct.price}
+                </p>
+              </div>
+            </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
+      </>
+      {/* )} */}
     </div>
     </Layout>
-
   )
 }
 
 export default ItemDetail;
+
+
+
+
+
+// const router = useRouter();
+
+// // router.query 를 api로 사용 가져오면 검증해야됨.
+// const { data , mutate} = useSWR<TypeProduct>(router.query.id ? `/api/products/${router.query.id}` : null )
+// const [toggleFav] = useMutation(`/api/products/${router.query.id}/fav`)
+// // console.log(favData.isLike);
+
+// const addFav = () => { 
+// if(!data) return
+// // post 요청을 하기전에 빠르게 미리 변경
+// // 콜백함수 사용, 인자로 data 를 가져온다
+// mutate( (prev) => prev && {...prev, isLiked: !prev.isLiked }, false );
+// // post 요청 go
+// toggleFav();
+// }

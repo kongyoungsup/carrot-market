@@ -7,6 +7,7 @@ declare global {
 }
 
 export const client = global.client || new PrismaClient();
+// export const client = global.client || new PrismaClient({ log: ['query] }); // 데이터베이스 쿼리 확인
 
 if (process.env.NODE_ENV !== 'production') global.client = client
 

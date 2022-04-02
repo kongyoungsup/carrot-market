@@ -10,8 +10,8 @@ const nodemailer = require("nodemailer");
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "thurpia01@gmail.com",
-    pass: "24258395hQ@",
+    user: process.env.GMAIL_ID,
+    pass: process.env.GMAIL_PWD,
   },
 });
 
@@ -63,6 +63,7 @@ async function handler(
     //     body: `your login token is ${randomToken}`,
     //   });
     //   console.log(message);
+    
     // ## nodemailer Email 보내기
     // } else if (email) {
     //   const sendEmail = await transporter.sendMail({
@@ -85,7 +86,7 @@ async function handler(
   }
 
 // POST, GET 을 확인 하는 함수.. (일종의 미들웨어..)
-export default withApiSession(withHandler({ method: "POST", fn: handler, isPrivate: false }));
+export default withApiSession(withHandler({ methods: ["POST"], fn: handler, isPrivate: false }));
 
 
 

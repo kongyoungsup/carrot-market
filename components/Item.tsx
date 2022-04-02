@@ -5,7 +5,7 @@ interface ItemProps {
   title: string;
   id: number;
   price: number;
-  comments: number;
+  comments?: number;
   hearts: number;
 }
 

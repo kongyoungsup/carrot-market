@@ -1,28 +1,63 @@
-import type { NextPage } from "next";
+import type { NextPage, NextPageContext } from "next";
 import FloatingButton from '@components/FloatingButton';
 import Item from '@components/Item';
 import Layout from '@components/Layout';
 import useUser from '@libs/client/useUser';
+import useSWR, { SWRConfig } from 'swr';
+import { Product } from '@prisma/client';
+import Input from '@components/Input';
+import Button from '@components/Button';
+import { useForm } from 'react-hook-form';
+import useMutation from '@libs/client/useMutation';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { InferGetServerSidePropsType } from 'next'
+import { client } from '@libs/server/clients';
 
-const Home: NextPage = () => {
+interface TypeFavcount extends TypeProduct{
+  _count: number;
+  serch: string;
+}
+
+interface TypeProduct{
+  ok: boolean;
+  product: TypeFavcount[] | any;
+}
+
+
+
+const Home: NextPage = () => { 
   const { user, isLoding } = useUser();
-  console.log(user);
+  // console.log(user);
   
-  return (
-    <Layout title='홈' hasTabBar>
+  const {data} = useSWR<TypeProduct>('/api/products')
+  
+  const { register, watch, handleSubmit } = useForm<TypeFavcount>();
+  
+  const router = useRouter()
+  const onSerch = (formData: TypeFavcount) => { 
+    if (!formData) return
+    router.push(`/serch?keyword=${watch('serch')}`)
+   }
+
+  return ( 
+    <>
+    <Layout title='홈' hasTabBar >
       <div>
-
-        {[1,2,3,4,5,6,7,8,9].map((_, i)=>(
-        <Item 
-          key={i}
-          id={i} 
-          title='New iPhone 14' 
-          price={99}
-          comments={2}
-          hearts={1}  
-        />
-        ))}
-
+        <form onSubmit={handleSubmit(onSerch)}>
+          <Input formReg={register('serch',{ required: true})} label='serch' title='검색'  />
+          <Button title='검색'></Button>
+        </form>
+          {data?.product?.map((product: any)=>(
+          <Item 
+            key={product.id}
+            id={product.id} 
+            title={product.name}
+            price={product.price}
+            comments={2}
+            hearts={product._count?.favs || 0}  
+          />
+          ))}
         <FloatingButton href='/products/upload'>
           <svg
             className="h-7 w-7 mx-auto font-bold "
@@ -43,6 +78,35 @@ const Home: NextPage = () => {
 
       </div>
     </Layout>
+    </>
   )};
 
-export default Home;
+
+export const getServerSideProps = async () => {
+  
+  const product = await client.product.findMany({})
+
+  return {
+    props: {
+      fallback: {
+        '/api/products': { 
+          ok: true, 
+          product: JSON.parse(JSON.stringify(product))
+        }
+      }
+    },
+  }
+}
+
+
+const page: NextPage<{fallback: TypeFavcount[]}> = ( {fallback} ) => { 
+  return(
+    <SWRConfig value={{ fallback }} >
+      <Home />
+    </SWRConfig>
+  )
+  }
+
+
+
+export default page;

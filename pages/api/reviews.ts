@@ -8,22 +8,32 @@ import { withApiSession } from '@libs/server/withSession';
 async function handler(
   req: NextApiRequest, 
   res: NextApiResponse<ResponseType>
-) {
-    // DB User의 id 와 쿠키에 저장된 세션의 id가 일치하는 레코드를 찾는다
-    const profile = await client.user.findUnique({
+) { 
+    const { user } = req.session
+    
+    const reviews = await client.review.findMany({
       where: {
-        id: req.session.user?.id
+        createForId: user?.id
+      },
+      include: {
+        createBy: {
+            select: {
+              id: true,
+              name: true,
+              avator: true
+            }
+        }
       }
     })
     
-    if (!profile) return res.status(404).end();
+    if (!reviews) return res.status(404).end();
     // if (!profile) return res.status(404).end();
     
     return res.status(200).json({
       ok: true,
-      profile,
+      reviews,
     });
 
   }
 
-  export default withApiSession(withHandler({ method: "GET", fn: handler }));
+  export default withApiSession(withHandler({ methods: ["GET",'POST'], fn: handler }));

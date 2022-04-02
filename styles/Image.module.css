@@ -1,0 +1,15 @@
+.imageContainer {
+  width: 100%;
+}
+
+.imageContainer > span {
+  position: unset !important;
+  height: 100%;
+}
+
+.image {
+  object-fit: contain;
+  width: 100% !important;
+  position: relative !important;
+  height: unset !important;
+}

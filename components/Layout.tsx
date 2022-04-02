@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { useRouter } from "next/router";
 import React from 'react';
 import { cls } from '@libs/client/utils';
+import useUser from '@libs/client/useUser';
+import useMutation from '@libs/client/useMutation';
+import { useSWRConfig } from 'swr';
 
 interface LayoutProps {
   title?: string;
@@ -18,10 +21,31 @@ export default function Layout( {title, canGoBack, hasTabBar, children}: LayoutP
     router.back();
   }
 
-  return(
-    <div>
+  // const { user, isLoding } = useUser();
 
-      {/* // Head 네이게이션 */}
+  const { mutate } = useSWRConfig()
+  const [ logoutMutate, {loading} ] = useMutation('/api/users/logout');
+
+  const logout = () => {
+    
+    if(loading) return
+    let retVal = confirm("로그아웃 하시겠어요?");
+
+    if( retVal == true ){
+
+      router.replace('/enter');
+      logoutMutate();
+
+    }else{
+      return
+    }
+
+   }
+
+
+  return(
+    <>
+      <div>
       <div className={cls(
         !canGoBack ? 'justify-center' : '',
         'bg-white max-w-xl w-full text-lg font-medium py-3 fixed text-gray-700 border-b top-0 flex items-center')}>
@@ -41,13 +65,11 @@ export default function Layout( {title, canGoBack, hasTabBar, children}: LayoutP
       </div>
 
 
-      {/* // Main */}
       <div className='py-16'>
         {children}
       </div>
 
 
-      {/* // Footer */}
       <div className={cls('pt-3', hasTabBar ? 'pb-0' : '')}>
         
         {hasTabBar ? 
@@ -109,7 +131,7 @@ export default function Layout( {title, canGoBack, hasTabBar, children}: LayoutP
                 <span>채팅</span>
               </a>
             </Link>
-            <Link href="/live">
+            <Link href="/stream">
               <a className="flex flex-col items-center space-y-2">
                 <svg
                   className="w-6 h-6"
@@ -147,10 +169,27 @@ export default function Layout( {title, canGoBack, hasTabBar, children}: LayoutP
                 <span>나의 캐럿</span>
               </a>
             </Link>
+            <button onClick={logout} className="flex flex-col items-center space-y-2">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  ></path>
+                </svg>
+                <span>로그 아웃</span>
+              </button>
           </nav>
           : null}
       </div>
-
-    </div>
+      </div>
+    </>
   )
 }

@@ -6,6 +6,7 @@ import Input from '@components/Input';
 import useMutation from '@libs/client/useMutation';
 import { cls } from "@libs/client/utils";
 import { useRouter } from 'next/router';
+import useUser from '@libs/client/useUser';
 
 interface EnterForm{
   email?: string;
@@ -30,12 +31,14 @@ const Enter: NextPage = () => {
 
   const [method, setMethod ] = useState< "email" | "phone">("email");
 
-  
+  const router = useRouter();
+
 
   const onEmailClick = ()=>{ 
     reset();
     setMethod("email") 
   };
+
   const onPhoneClick = ()=>{ 
     reset();
     setMethod("phone") 
@@ -51,20 +54,29 @@ const Enter: NextPage = () => {
     confirmToken(validForm);
   }
 
-  const router = useRouter();
-
+  
   useEffect(() => {
     if (tokenData?.ok) {
       router.push("/");
     }
-    
   }, [tokenData, router]);
 
-  // console.log('client res: ' + loading, data, error);
+  console.log(tokenData);
+  // const {user, isLoding} = useUser();
 
+  // useEffect(() => {
+  //   if (user) {
+  //     router.push("/");
+  //   }else{
+  //     return
+  //   }
+  // }, [user, router]);
 
+  // console.log(user);
+  
+  
   return(
-
+    <>
     <div className='mt-16 px-5'>
       {/* // title */}
       <h3 className='text-3xl font-bold text-center'>Enter to Carrot</h3>
@@ -166,8 +178,11 @@ const Enter: NextPage = () => {
       </div>
 
     </div>
+    </>
   )
   
 }
 
 export default Enter;
+
+
